@@ -1,0 +1,38 @@
+name: AI Project Review
+
+on:
+  schedule:
+    - cron: '0 21 * * *'  # 4pm UTC-5
+  workflow_dispatch:
+    inputs:
+      focus:
+        description: 'Review focus'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - issues
+          - enhancements
+
+jobs:
+  ai-review:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run AI Review
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          REVIEW_FOCUS: ${{ inputs.focus || 'all' }}
+        run: node .github/scripts/ai-review.mjs
