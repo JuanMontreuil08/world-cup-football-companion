@@ -51,7 +51,14 @@ export function useMatchSession() {
       session.on('error', (err: { type: 'error'; error: unknown }) => {
         console.error('[session] error', err);
         const message = err.error instanceof Error ? err.error.message : String(err.error);
-        setState((s) => ({ ...s, status: 'error', orbState: 'error', error: message }));
+        setState((s) => ({
+          ...s,
+          // Preserve 'connected' for non-fatal server-sent errors — the WebRTC session
+          // remains usable. Only flip to 'error' if we haven't finished connecting yet.
+          status: s.status === 'connected' ? 'connected' : 'error',
+          orbState: s.status === 'connected' ? s.orbState : 'error',
+          error: message,
+        }));
       });
 
       await session.connect({ apiKey: key });
