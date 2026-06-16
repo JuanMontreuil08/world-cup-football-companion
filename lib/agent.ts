@@ -68,10 +68,30 @@ const searchPlayer = tool({
   },
 });
 
+const getCommentary = tool({
+  name: 'getCommentary',
+  description: 'Get play-by-play commentary for the match — shots, saves, fouls, goals, subs. Use fromMinute/toMinute for time-range questions ("first 10 minutes" → from=0,to=10; "second half" → from=45,to=90). Omit both for the most recent events. After retrieving, narrate like a pundit: dominant team, key players, shots, pressure, turning points — not just goals.',
+  parameters: z.object({
+    fromMinute: z.number().optional().describe('Start of time range in minutes (inclusive)'),
+    toMinute: z.number().optional().describe('End of time range in minutes (inclusive)'),
+  }),
+  execute: async ({ fromMinute, toMinute }) => {
+    const params = new URLSearchParams();
+    if (fromMinute !== undefined) params.set('from', String(fromMinute));
+    if (toMinute !== undefined) params.set('to', String(toMinute));
+    const url = `/api/commentary${params.size > 0 ? `?${params}` : ''}`;
+    console.log(`[agent] getCommentary called — ${url}`);
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Failed to fetch commentary');
+    const entries = await res.json();
+    console.log(`[agent] getCommentary returned ${Array.isArray(entries) ? entries.length : '?'} entries`);
+    return entries;
+  },
+});
 
 export const agent = new RealtimeAgent({
   name: 'Match AI',
   voice: VOICE,
   instructions: INSTRUCTIONS,
-  tools: [getMatchStats, getLiveEvents, getLineups, getPlayerStats, searchPlayer],
+  tools: [getMatchStats, getLiveEvents, getLineups, getPlayerStats, searchPlayer, getCommentary],
 });

@@ -1,5 +1,5 @@
 export const VOICE = 'shimmer' as const;
-export const REALTIME_MODEL = 'gpt-realtime-2';
+export const REALTIME_MODEL = 'gpt-realtime-mini';
 export const REASONING_EFFORT = 'low' as const;
 
 export const SESSION_LIMIT_MS = 55 * 60 * 1000;
@@ -50,12 +50,15 @@ All tools are read-only. Call them freely when intent is clear — no confirmati
 
 **searchPlayer** — use for: everything about a player OUTSIDE this match — current club, this season's goals/assists, recent form, injuries, transfer news, career background. Use a specific query like "Kai Havertz Arsenal 2025-26 goals assists form".
 
+**getCommentary** — use for: ANY question about what happened during a time period, what a team was doing, how a player performed, shots, saves, fouls, pressure, match narrative. Pass fromMinute/toMinute for time ranges ("first 10 minutes" → from=0,to=10; "second half" → from=45,to=90; omit both for recent). After calling, synthesize like a pundit: dominant team, key players, turning points, shots on goal, pressure — never just list goals. Do NOT use getLiveEvents for time-range questions.
+
 **Decision rules:**
 - "¿Cuánta posesión tiene Alemania?" → getMatchStats
 - "¿Quién ha marcado?" → getLiveEvents
 - "¿Cuál es la formación?" → getLineups
 - "¿Cómo está jugando Havertz HOY?" → getPlayerStats
 - "¿En qué club juega Havertz?" or "¿Cuántos goles lleva esta temporada?" → searchPlayer
+- "¿Qué pasó en los primeros 10 minutos?" or any time-range question → getCommentary, then narrate like a pundit
 
 If a tool returns null or fails, say so briefly and offer to try another approach.
 
