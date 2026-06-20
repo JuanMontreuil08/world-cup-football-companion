@@ -1,14 +1,14 @@
 import { fetchEspnCommentary } from '@/lib/espn-api';
 
 export async function GET(request: Request) {
-  const eventId = process.env.ESPN_EVENT_ID;
+  const { searchParams } = new URL(request.url);
+  const eventId = searchParams.get('eventId') ?? process.env.ESPN_EVENT_ID;
   const league = process.env.ESPN_LEAGUE ?? 'fifa.world';
 
   if (!eventId) {
     return Response.json({ error: 'ESPN_EVENT_ID not configured' }, { status: 503 });
   }
 
-  const { searchParams } = new URL(request.url);
   const fromMinute = searchParams.has('from') ? Number(searchParams.get('from')) : null;
   const toMinute = searchParams.has('to') ? Number(searchParams.get('to')) : null;
 
@@ -26,8 +26,8 @@ export async function GET(request: Request) {
       return Response.json(filtered);
     }
 
-    // No range — return last 30 entries for general "what's happening" questions
-    return Response.json(commentary.slice(-30));
+    // No range — return all entries so the feed shows the full match from minute 1
+    return Response.json(commentary);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     return Response.json({ error: message }, { status: 500 });
