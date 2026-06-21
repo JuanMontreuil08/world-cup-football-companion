@@ -15,7 +15,7 @@ export async function fetchEspnCommentary(
   eventId: string
 ): Promise<EspnCommentaryEntry[]> {
   const res = await fetch(`${ESPN_BASE}/${league}/summary?event=${eventId}`, {
-    next: { revalidate: 30 },
+    next: { revalidate: 10 },
   });
   if (!res.ok) throw new Error(`ESPN API ${res.status}`);
   const json = await res.json();

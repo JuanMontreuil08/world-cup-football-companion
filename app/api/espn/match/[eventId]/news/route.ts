@@ -30,7 +30,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ eventId:
     return teamWords.some(w => text.includes(w))
   })
 
-  const normalized = (relevant.length ? relevant : articles).map(a => ({
+  const normalized = relevant.map(a => ({
     id: a.id,
     headline: a.headline ?? '',
     description: a.description ?? '',

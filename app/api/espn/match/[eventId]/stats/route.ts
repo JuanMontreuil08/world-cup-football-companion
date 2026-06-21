@@ -2,7 +2,7 @@ const ESPN_BASE = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.wor
 
 export async function GET(_req: Request, { params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = await params
-  const res = await fetch(`${ESPN_BASE}/summary?event=${eventId}`, { next: { revalidate: 30 } })
+  const res = await fetch(`${ESPN_BASE}/summary?event=${eventId}`, { next: { revalidate: 10 } })
   if (!res.ok) return Response.json({ error: 'ESPN error' }, { status: res.status })
 
   const data = await res.json()

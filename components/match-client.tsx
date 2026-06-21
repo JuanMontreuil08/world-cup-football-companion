@@ -10,6 +10,7 @@ import { LineupTab } from './lineup-tab'
 import { StatsTab } from './stats-tab'
 import { NewsTab } from './news-tab'
 import { EspnCommentaryEntry, isGoalEvent, isKeyEvent } from '@/lib/espn-api'
+import { POLLING_INTERVAL_MS } from '@/lib/config'
 
 type Tab = 'analyst' | 'lineups' | 'stats' | 'news'
 
@@ -47,10 +48,46 @@ export function MatchClient({
   const { status, isMuted, orbState, error } = session
   const isConnected = status === 'connected'
   const lastSeqRef = useRef(0)
+  const contextInjectedRef = useRef(false)
 
   const [activeTab, setActiveTab] = useState<Tab>('analyst')
   const [liveState, setLiveState] = useState({ state, clock, homeScore, awayScore })
   const [commentary, setCommentary] = useState<EspnCommentaryEntry[]>([])
+
+  // Inject match context once when the session connects
+  useEffect(() => {
+    if (status === 'disconnected') {
+      contextInjectedRef.current = false
+      return
+    }
+    if (status !== 'connected' || contextInjectedRef.current) return
+    contextInjectedRef.current = true
+
+    const { state: matchState, clock, homeScore, awayScore } = liveState
+    const scoreText =
+      matchState === 'pre'
+        ? 'The match has not started yet.'
+        : matchState === 'post'
+        ? `Final score: ${homeTeam} ${homeScore} – ${awayScore} ${awayTeam}.`
+        : `Current score: ${homeTeam} ${homeScore} – ${awayScore} ${awayTeam}, minute ${clock}.`
+
+    injectContext(
+      `[MATCH CONTEXT]\nYou are watching: ${homeTeam} vs ${awayTeam} — FIFA World Cup 2026, Group Stage.\nFixture ID: ${eventId}. Always use this ID when calling any tool.\n${scoreText}`
+    )
+
+    // Inject lineups so the agent knows squads without a tool call
+    fetch(`/api/espn/match/${eventId}/lineups`)
+      .then(r => r.ok ? r.json() : null)
+      .then((teams: { teamName: string; formation: string; starters: { jersey: string; name: string; positionName: string }[] }[] | null) => {
+        if (!teams?.length) return
+        const text = teams.map(t => {
+          const players = t.starters.map(p => `#${p.jersey} ${p.name} (${p.positionName})`).join(', ')
+          return `${t.teamName} (${t.formation}): ${players}`
+        }).join('\n')
+        injectContext(`[LINEUPS]\n${text}`)
+      })
+      .catch(() => null)
+  }, [status]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Poll live score/clock every 30s
   useEffect(() => {
@@ -64,7 +101,7 @@ export function MatchClient({
       } catch {}
     }
     pollScore()
-    const id = setInterval(pollScore, 30_000)
+    const id = setInterval(pollScore, POLLING_INTERVAL_MS)
     return () => clearInterval(id)
   }, [eventId])
 
@@ -105,7 +142,7 @@ export function MatchClient({
     }
 
     fetchCommentary()
-    const interval = setInterval(fetchCommentary, 30_000)
+    const interval = setInterval(fetchCommentary, POLLING_INTERVAL_MS)
     return () => clearInterval(interval)
   }, [eventId, status, injectContext])
 

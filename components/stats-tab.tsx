@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { POLLING_INTERVAL_MS } from '@/lib/config'
 
 interface StatRow { displayName: string; home: string; away: string }
 
@@ -72,7 +73,7 @@ export function StatsTab({ eventId, homeColor, awayColor }: { eventId: string; h
         .catch(() => setLoading(false))
     }
     load()
-    const id = setInterval(load, 30_000)
+    const id = setInterval(load, POLLING_INTERVAL_MS)
     return () => clearInterval(id)
   }, [eventId])
 
