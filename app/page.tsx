@@ -54,7 +54,6 @@ async function getMatches(): Promise<MatchCard[]> {
   return events
     .filter(e => {
       const comp = e.competitions[0]
-      if (comp.status.type.state === 'post') return false
       // Filter out knockout placeholder matches (teams not yet decided)
       const isPlaceholder = comp.competitors.some(c =>
         c.team.displayName.toLowerCase().includes('group') ||
@@ -92,8 +91,11 @@ export default async function Page() {
   const todayStr = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString().slice(0, 10)
   const tomorrowStr = new Date(Date.now() - 5 * 60 * 60 * 1000 + 86_400_000).toISOString().slice(0, 10)
 
+  const completedMatches = matches.filter(m => m.state === 'post')
+  const activeMatches = matches.filter(m => m.state !== 'post')
+
   const grouped = new Map<string, MatchCard[]>()
-  for (const m of matches) {
+  for (const m of activeMatches) {
     const day = utc5Day(m.date)
     if (!grouped.has(day)) grouped.set(day, [])
     grouped.get(day)!.push(m)
@@ -107,12 +109,13 @@ export default async function Page() {
 
   return (
     <MatchSchedule
-      total={matches.length}
+      total={activeMatches.length}
       todayMatches={todayMatches}
       todayLabel={todayStr}
       tomorrowMatches={tomorrowMatches}
       tomorrowLabel={tomorrowStr}
       upcomingDays={upcomingDays}
+      completedMatches={completedMatches}
     />
   )
 }

@@ -89,7 +89,7 @@ export function MatchClient({
       .catch(() => null)
   }, [status]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Poll live score/clock every 30s
+  // Poll live score/clock — inject score update to agent when score changes
   useEffect(() => {
     async function pollScore() {
       try {
@@ -97,13 +97,21 @@ export function MatchClient({
         if (!res.ok) return
         const live: { id: string; state: string; clock: string; homeScore: string; awayScore: string }[] = await res.json()
         const match = live.find(m => m.id === eventId)
-        if (match) setLiveState({ state: match.state, clock: match.clock, homeScore: match.homeScore, awayScore: match.awayScore })
+        if (!match) return
+        setLiveState(prev => {
+          if (prev.homeScore !== match.homeScore || prev.awayScore !== match.awayScore) {
+            if (contextInjectedRef.current) {
+              injectContext(`[SCORE UPDATE] ${homeTeam} ${match.homeScore} – ${match.awayScore} ${awayTeam}, minute ${match.clock}.`)
+            }
+          }
+          return { state: match.state, clock: match.clock, homeScore: match.homeScore, awayScore: match.awayScore }
+        })
       } catch {}
     }
     pollScore()
     const id = setInterval(pollScore, POLLING_INTERVAL_MS)
     return () => clearInterval(id)
-  }, [eventId])
+  }, [eventId, injectContext, homeTeam, awayTeam])
 
   // Poll commentary every 30s
   useEffect(() => {

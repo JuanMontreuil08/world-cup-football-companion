@@ -378,6 +378,119 @@ function CardCompact({ m }: { m: MatchCard }) {
   )
 }
 
+// ─── completed matches section ────────────────────────────────────────────────
+
+function formatDatePlayed(isoDate: string): string {
+  return new Date(isoDate).toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', timeZone: 'UTC',
+  })
+}
+
+function CompletedSection({ matches }: { matches: MatchCard[] }) {
+  const [open, setOpen] = useState(false)
+
+  if (matches.length === 0) return null
+
+  return (
+    <div style={{
+      position: 'relative', zIndex: 40,
+      backgroundColor: '#f9f7f4',
+      borderRadius: '28px 28px 0 0',
+      marginTop: -44,
+      boxShadow: '0 -12px 56px rgba(0,0,0,0.09)',
+      padding: '52px 56px 80px',
+    }}>
+      {/* Toggle header */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 12,
+          background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+          marginBottom: open ? 32 : 0,
+        }}
+      >
+        <p style={{
+          fontSize: 11, fontWeight: 700, letterSpacing: '0.14em',
+          textTransform: 'uppercase', color: '#b0b0b0', margin: 0,
+        }}>
+          Completed Matches
+        </p>
+        <span style={{
+          fontSize: 11, fontWeight: 600, color: '#ccc',
+          backgroundColor: '#ebebeb', borderRadius: 20,
+          padding: '2px 8px',
+        }}>
+          {matches.length}
+        </span>
+        <span style={{
+          fontSize: 13, color: '#ccc',
+          transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+          transition: 'transform 0.25s ease',
+          display: 'inline-block',
+          marginLeft: 2,
+        }}>
+          ▾
+        </span>
+      </button>
+
+      {/* Match grid */}
+      {open && (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+          gap: 10,
+        }}>
+          {[...matches].reverse().map(m => (
+            <Link key={m.id} href={`/match/${m.id}`} style={{ textDecoration: 'none' }}>
+              <div style={{
+                borderRadius: 14,
+                background: [
+                  `radial-gradient(ellipse at 15% 55%, ${m.homeColor}28 0%, transparent 50%)`,
+                  `radial-gradient(ellipse at 85% 45%, ${m.awayColor}28 0%, transparent 50%)`,
+                ].join(', '),
+                backgroundColor: '#edecea',
+                padding: '14px 18px',
+                display: 'flex', alignItems: 'center', gap: 12,
+                cursor: 'pointer',
+                boxShadow: '0 1px 6px rgba(0,0,0,0.05)',
+                transition: 'transform 0.15s',
+              }}>
+                {/* Home */}
+                <Image src={m.homeLogo} alt={m.homeTeam} width={28} height={28} style={{ objectFit: 'contain' }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{
+                    fontSize: 9, color: '#00000040', fontWeight: 700,
+                    textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 3,
+                  }}>
+                    {m.group} · {formatDatePlayed(m.date)}
+                  </div>
+                  <div style={{
+                    fontSize: 12, color: '#2a2a2a', fontWeight: 600,
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                  }}>
+                    {m.homeTeam}
+                    <span style={{ color: '#999', fontWeight: 400, margin: '0 6px' }}>
+                      {m.homeScore}–{m.awayScore}
+                    </span>
+                    {m.awayTeam}
+                  </div>
+                  <div style={{ fontSize: 10, color: '#bbb', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span>Final</span>
+                    <span style={{ color: '#ddd' }}>·</span>
+                    <span>Ask AI ↗</span>
+                  </div>
+                </div>
+                {/* Away */}
+                <Image src={m.awayLogo} alt={m.awayTeam} width={28} height={28} style={{ objectFit: 'contain' }} />
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── live score patch ─────────────────────────────────────────────────────────
 
 interface LivePatch { id: string; state: string; clock: string; homeScore: string; awayScore: string }
@@ -411,7 +524,7 @@ function useLiveScores(initialMatches: MatchCard[]): MatchCard[] {
 // ─── root ─────────────────────────────────────────────────────────────────────
 
 export function MatchSchedule({
-  total, todayMatches, todayLabel, tomorrowMatches, tomorrowLabel, upcomingDays,
+  total, todayMatches, todayLabel, tomorrowMatches, tomorrowLabel, upcomingDays, completedMatches = [],
 }: {
   total: number
   todayMatches: MatchCard[]
@@ -419,6 +532,7 @@ export function MatchSchedule({
   tomorrowMatches: MatchCard[]
   tomorrowLabel: string
   upcomingDays: [string, MatchCard[]][]
+  completedMatches: MatchCard[]
 }) {
   const allToday = useLiveScores(todayMatches)
   const allTomorrow = useLiveScores(tomorrowMatches)
@@ -471,6 +585,9 @@ export function MatchSchedule({
       {upcomingDays.length > 0 && (
         <UpcomingSection days={upcomingDays} zIndex={30} />
       )}
+
+      {/* Completed — collapsed dropdown at the bottom */}
+      <CompletedSection matches={completedMatches} />
 
     </div>
   )
