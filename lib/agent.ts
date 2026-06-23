@@ -77,9 +77,28 @@ const getCommentary = tool({
   },
 });
 
+const openMatchStream = tool({
+  name: 'openMatchStream',
+  description: 'Open Paramount+ in a browser and navigate to a specific moment in a live match. Use when the user wants to WATCH, SEE, or SHOW a goal, play, or moment from the match.',
+  parameters: z.object({
+    homeTeam: z.string().describe('Home team name'),
+    awayTeam: z.string().describe('Away team name'),
+    minute: z.number().optional().describe('Minute to seek to (omit for live stream)'),
+  }),
+  execute: async ({ homeTeam, awayTeam, minute }) => {
+    const res = await fetch('/api/cua', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ homeTeam, awayTeam, minute }),
+    });
+    if (!res.ok) throw new Error('Failed to open stream');
+    return res.json();
+  },
+});
+
 export const agent = new RealtimeAgent({
   name: 'Match AI',
   voice: VOICE,
   instructions: INSTRUCTIONS,
-  tools: [getMatchStats, getLiveEvents, getLineups, searchWeb, getCommentary],
+  tools: [getMatchStats, getLiveEvents, getLineups, searchWeb, getCommentary, openMatchStream],
 });
