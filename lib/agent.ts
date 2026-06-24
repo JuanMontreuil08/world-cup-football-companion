@@ -84,12 +84,40 @@ const openGoalClip = tool({
     query: z.string().describe('YouTube search query, e.g. "Cristiano Ronaldo goal Portugal vs Uzbekistan minute 23 World Cup 2026"'),
   }),
   execute: async ({ query }) => {
-    const res = await fetch('/api/cua', {
+    // Fire-and-forget — CUA takes 30-60s, don't block the agent waiting for it
+    fetch('/api/cua', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query }),
+    }).catch(err => console.error('[openGoalClip] CUA error:', err));
+    return { status: 'searching', query };
+  },
+});
+
+const stopGoalClip = tool({
+  name: 'stopGoalClip',
+  description: 'Pause the video currently playing. The browser window stays open.',
+  parameters: z.object({}),
+  execute: async () => {
+    const res = await fetch('/api/cua', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'stop' }),
     });
-    if (!res.ok) throw new Error('Failed to open clip');
+    return res.json();
+  },
+});
+
+const closeGoalClip = tool({
+  name: 'closeGoalClip',
+  description: 'Close the video browser entirely and return to the match page.',
+  parameters: z.object({}),
+  execute: async () => {
+    const res = await fetch('/api/cua', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'close' }),
+    });
     return res.json();
   },
 });
@@ -98,5 +126,5 @@ export const agent = new RealtimeAgent({
   name: 'Match AI',
   voice: VOICE,
   instructions: INSTRUCTIONS,
-  tools: [getMatchStats, getLiveEvents, getLineups, searchWeb, getCommentary, openGoalClip],
+  tools: [getMatchStats, getLiveEvents, getLineups, searchWeb, getCommentary, openGoalClip, stopGoalClip, closeGoalClip],
 });

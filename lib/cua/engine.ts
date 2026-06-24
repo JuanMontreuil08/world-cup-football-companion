@@ -10,6 +10,7 @@ export async function cuaLoop(
   browser: BrowserManager,
   goal: string,
   hints: string,
+  signal?: AbortSignal,
 ): Promise<void> {
   console.log(`[cua] 🎯 Goal: ${goal}`);
 
@@ -20,6 +21,11 @@ export async function cuaLoop(
   });
 
   for (let i = 0; i < MAX_ITERATIONS; i++) {
+    if (signal?.aborted) {
+      console.log('[cua] 🛑 Aborted');
+      break;
+    }
+
     const computerCall = response.output.find(
       (o: { type: string }) => o.type === 'computer_call'
     ) as { type: 'computer_call'; call_id: string; actions?: CUAAction[] } | undefined;

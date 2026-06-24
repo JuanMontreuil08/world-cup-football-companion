@@ -45,6 +45,13 @@ export class BrowserManager {
     return this.browser?.isConnected() === true && this.page !== null && !this.page.isClosed();
   }
 
+  async close(): Promise<void> {
+    await this.browser?.close();
+    this.browser = null;
+    this.context = null;
+    this.page = null;
+  }
+
   async goto(url: string): Promise<void> {
     await this.page!.goto(url, { waitUntil: 'domcontentloaded' });
   }
