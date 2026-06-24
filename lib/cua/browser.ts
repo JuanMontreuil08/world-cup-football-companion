@@ -16,6 +16,7 @@ const KEY_MAP: Record<string, string> = {
   BACKSPACE: 'Backspace', DELETE: 'Delete', ESCAPE: 'Escape',
   ARROWUP: 'ArrowUp', ARROWDOWN: 'ArrowDown',
   ARROWLEFT: 'ArrowLeft', ARROWRIGHT: 'ArrowRight',
+  UP: 'ArrowUp', DOWN: 'ArrowDown', LEFT: 'ArrowLeft', RIGHT: 'ArrowRight',
   CMD: 'Meta', CTRL: 'Control', ALT: 'Alt', SHIFT: 'Shift',
 };
 
@@ -41,7 +42,7 @@ export class BrowserManager {
   }
 
   isAlive(): boolean {
-    return this.browser?.isConnected() === true && this.page !== null;
+    return this.browser?.isConnected() === true && this.page !== null && !this.page.isClosed();
   }
 
   async goto(url: string): Promise<void> {
@@ -53,35 +54,23 @@ export class BrowserManager {
     return `data:image/png;base64,${buf.toString('base64')}`;
   }
 
-  async typeInFocusedField(text: string): Promise<void> {
-    await this.page!.keyboard.type(text, { delay: 30 });
-  }
-
-  async pressTab(): Promise<void> {
-    await this.page!.keyboard.press('Tab');
-  }
-
   async pressEnter(): Promise<void> {
     await this.page!.keyboard.press('Enter');
-  }
-
-  async clickText(text: string): Promise<void> {
-    await this.page!.getByText(text, { exact: false }).first().click();
-  }
-
-  async fillInput(selector: string, value: string): Promise<void> {
-    await this.page!.fill(selector, value);
   }
 
   async waitForNavigation(): Promise<void> {
     await this.page!.waitForLoadState('domcontentloaded');
   }
 
+  async evaluate<T>(fn: (arg?: unknown) => T, arg?: unknown): Promise<T> {
+    return this.page!.evaluate(fn, arg) as Promise<T>;
+  }
+
   async executeActions(actions: CUAAction[]): Promise<void> {
     for (const action of actions) {
       switch (action.type) {
         case 'click':
-          await this.page!.mouse.click(action.x, action.y, { button: action.button as 'left' | 'right' | 'middle' ?? 'left' });
+          await this.page!.mouse.click(action.x, action.y, { button: (action.button ?? 'left') as 'left' | 'right' | 'middle' });
           break;
         case 'double_click':
           await this.page!.mouse.dblclick(action.x, action.y);
@@ -113,7 +102,7 @@ export class BrowserManager {
           await new Promise(r => setTimeout(r, 1000));
           break;
         case 'screenshot':
-          break; // no-op, we screenshot after all actions
+          break; // no-op — screenshot is taken after all actions
       }
     }
   }

@@ -1,7 +1,7 @@
 import { BrowserManager } from '@/lib/cua/browser';
-import { navigateToMatch } from '@/lib/cua/paramount';
+import { searchAndPlayClip } from '@/lib/cua/youtube';
 
-// Singleton — reuse browser across calls (stays logged in)
+// Singleton — browser stays open between calls so CUA doesn't reload every time
 let browserInstance: BrowserManager | null = null;
 
 async function getBrowser(): Promise<BrowserManager> {
@@ -12,20 +12,15 @@ async function getBrowser(): Promise<BrowserManager> {
 }
 
 export async function POST(req: Request) {
-  const { homeTeam, awayTeam, minute } = await req.json();
-  const email = process.env.PARAMOUNT_EMAIL!;
-  const password = process.env.PARAMOUNT_PASSWORD!;
-
+  const { query } = await req.json();
   const browser = await getBrowser();
 
   try {
-    const result = await navigateToMatch(browser, email, password, homeTeam, awayTeam, minute);
+    const result = await searchAndPlayClip(browser, query);
     return Response.json(result);
   } catch (err) {
-    return Response.json(
-      { status: 'error', error: String(err) },
-      { status: 500 },
-    );
+    console.error('[cua] ❌', err);
+    browserInstance = null;
+    return Response.json({ status: 'error', error: String(err) }, { status: 500 });
   }
-  // Browser stays open — user is watching the stream
 }

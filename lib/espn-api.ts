@@ -24,7 +24,7 @@ export async function fetchEspnCommentary(
 
 export function isGoalEvent(entry: EspnCommentaryEntry): boolean {
   const type = entry.play?.type?.type ?? '';
-  return type === 'goal' || type.startsWith('goal---') || type === 'penalty---scored';
+  return type === 'goal' || type.startsWith('goal---') || type === 'penalty---scored' || type === 'own-goal';
 }
 
 export function isKeyEvent(entry: EspnCommentaryEntry): boolean {

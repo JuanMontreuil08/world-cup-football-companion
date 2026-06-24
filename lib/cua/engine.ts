@@ -10,20 +10,14 @@ export async function cuaLoop(
   browser: BrowserManager,
   goal: string,
   hints: string,
-): Promise<{ status: string; error?: string }> {
+): Promise<void> {
   console.log(`[cua] 🎯 Goal: ${goal}`);
-
-  await browser.screenshot(); // warm up — first turn the model will request its own screenshot
-  console.log('[cua] 📸 Initial screenshot taken');
 
   let response = await client.responses.create({
     model: CUA_MODEL,
     tools: [{ type: 'computer' }],
-    input: [
-      { role: 'user', content: `${goal}\n\nContext: ${hints}` },
-    ],
+    input: [{ role: 'user', content: `${goal}\n\nContext: ${hints}` }],
   });
-  console.log(`[cua] 🤖 First response — ${response.output.length} output items`);
 
   for (let i = 0; i < MAX_ITERATIONS; i++) {
     const computerCall = response.output.find(
@@ -31,19 +25,18 @@ export async function cuaLoop(
     ) as { type: 'computer_call'; call_id: string; actions?: CUAAction[] } | undefined;
 
     if (!computerCall) {
-      console.log(`[cua] ✅ Done — model returned no more actions (iteration ${i})`);
+      console.log(`[cua] ✅ Done after ${i} iterations`);
       break;
     }
 
     const actionTypes = computerCall.actions?.map(a => a.type).join(', ') ?? 'none';
-    console.log(`[cua] ⚡ Iteration ${i + 1} — actions: [${actionTypes}]`);
+    console.log(`[cua] ⚡ Iteration ${i + 1} — [${actionTypes}]`);
 
     if (computerCall.actions?.length) {
       await browser.executeActions(computerCall.actions);
     }
 
-    const newScreenshot = await browser.screenshot();
-    console.log(`[cua] 📸 Screenshot after actions`);
+    const screenshot = await browser.screenshot();
 
     response = await client.responses.create({
       model: CUA_MODEL,
@@ -54,13 +47,9 @@ export async function cuaLoop(
         call_id: computerCall.call_id,
         output: {
           type: 'computer_screenshot' as const,
-          image_url: newScreenshot,
+          image_url: screenshot,
         },
       }],
     });
-    console.log(`[cua] 🤖 Response — ${response.output.length} output items`);
   }
-
-  console.log(`[cua] ✅ cuaLoop complete for: ${goal}`);
-  return { status: 'complete' };
 }

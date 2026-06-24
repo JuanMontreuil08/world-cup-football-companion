@@ -26,8 +26,25 @@ export async function GET(request: Request) {
       return Response.json(filtered);
     }
 
-    // No range — return all entries so the feed shows the full match from minute 1
-    return Response.json(commentary);
+    // No range — return a condensed summary: key events + one entry per 5-min window
+    // Prevents overloading the realtime model with 100+ commentary lines
+    const KEY_TYPES = ['goal', 'card', 'substitution', 'penalty', 'red card', 'yellow card'];
+    const isKeyEvent = (e: typeof commentary[0]) => {
+      const type = e.play?.type?.type?.toLowerCase() ?? '';
+      const text = e.text?.toLowerCase() ?? '';
+      return KEY_TYPES.some(k => type.includes(k) || text.includes(k));
+    };
+
+    const seen = new Set<number>();
+    const condensed = commentary.filter(e => {
+      if (isKeyEvent(e)) return true;
+      const bucket = Math.floor((e.time?.value ?? 0) / 300); // 5-min buckets
+      if (seen.has(bucket)) return false;
+      seen.add(bucket);
+      return true;
+    });
+
+    return Response.json(condensed);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     return Response.json({ error: message }, { status: 500 });
