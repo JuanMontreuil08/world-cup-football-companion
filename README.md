@@ -5,13 +5,13 @@ AI-powered FIFA World Cup 2026 match companion. Talk to it, ask about the match,
 ## What it does
 
 - **Live match data** — scores, stats, lineups, play-by-play commentary via ESPN
-- **Voice AI analyst** — OpenAI Realtime API agent you talk to in Spanish. Ask "¿quién marcó?" or "¿cómo está jugando Portugal?" and it answers with live data
-- **Computer Use (CUA)** — say "muéstrame el gol" and GPT-5.5 opens a browser, searches YouTube, and plays the clip using AI vision
+- **Voice AI analyst** — OpenAI Realtime API agent you talk to in any language. Ask "who scored?" or "¿cómo está jugando Portugal?" and it answers with live data
+- **Computer Use (CUA)** — say "show me the goal" and GPT-5.5 opens a browser, searches YouTube, and plays the clip using AI vision. Say "stop" to pause, "close" to return to the match.
 
 ## Stack
 
 - **Next.js 15** (App Router) + TypeScript
-- **OpenAI Realtime API** — voice agent (`gpt-realtime-mini`)
+- **OpenAI Realtime API** — voice agent (`gpt-realtime-2`)
 - **OpenAI Responses API** — computer use (`gpt-5.5`)
 - **Playwright** — browser automation for CUA
 - **ESPN public API** — match data, commentary, lineups, stats
@@ -87,3 +87,5 @@ The model never sees HTML. It reads screenshots like a human and decides where t
 | `getCommentary` | ESPN | Play-by-play narrative by time range |
 | `searchWeb` | Perplexity | Player clubs, injuries, stadiums |
 | `openGoalClip` | CUA + YouTube | Play a goal clip on screen |
+| `stopGoalClip` | CUA | Pause the video (browser stays open) |
+| `closeGoalClip` | CUA | Close the browser, return to match |
